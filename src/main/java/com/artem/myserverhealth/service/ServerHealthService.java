@@ -1,6 +1,7 @@
 package com.artem.myserverhealth.service;
 
 import com.artem.myserverhealth.dto.ServerHealthDTO;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -11,8 +12,11 @@ import org.springframework.web.client.RestTemplate;
 @RequiredArgsConstructor
 public class ServerHealthService {
 
+    private final ServerService serverService;
+    private final HistoryService historyService;
     private final RestTemplate restTemplate;
 
+    @Transactional
     public ServerHealthDTO getHealth(String serverName) {
         var isAvailable = false;
         try {
@@ -21,10 +25,11 @@ public class ServerHealthService {
         } catch (Exception e) {
             log.error("Error when checking server health for {}: {}", serverName, e.getMessage(), e);
         }
+        var server = serverService.create(serverName);
+        historyService.create(isAvailable, server);
         return ServerHealthDTO.builder()
                 .serverName(serverName)
                 .isAvailable(isAvailable)
                 .build();
     }
-
 }
